@@ -1,0 +1,592 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+------------------------------------------------------------------------
+
+output: word_document: default pdf_document: default html_document: df_print: paged ---
+
+```{r, eval=TRUE}
+# Initial Task - R Code to Get Started
+# Version:January 2025
+rm(list=ls())
+# --- Setup ---
+# Set your working directory to the folder where your data is stored
+# Example: setwd("path/to/your/directory")
+# If you're using a University lab computer, ensure you save your work on your network drive 
+# or back it up using cloud storage (e.g., Apple iCloud, Google Drive) or a USB stick.
+# Always keep multiple backups of your work to prevent data loss.
+
+
+
+# --- Load Data ---
+# Copy the file "gene-expression-invasive-vs-noninvasive-cancer.csv" from Moodle to your working directory
+InitialData <- read.csv(file = "C:/AS/gene-expression-invasive-vs-noninvasive-cancer.csv")
+
+
+
+# --- Check the Data ---
+# Use the following commands to understand the structure and dimensions of the dataset
+str(InitialData)
+# Output Example:
+# 'data.frame': 78 obs. of 4773 variables
+# $ X             : int  1 2 3 4 5 6 7 8 9 10 ...
+# $ J00129        : num  -0.448 -0.48 -0.568 -0.819 ...
+# $ Contig29982_RC: num  -0.296 -0.512 -0.411 -0.267 ...
+# $ Contig42854   : num  -0.1 -0.031 -0.398 0.023 ...
+
+dim(InitialData)  # Returns dataset dimensions (rows and columns)
+# Example Output:
+# [1] 78 4773
+
+dimnames(InitialData)[[2]][4770:4773]  # View the names of the last columns
+# Example Output:
+# [1] "NM_000895" "NM_000898" "AF067420" "Class"
+
+# Summary of the dataset:
+# - 78 rows (patients)
+# - 4773 columns: 4772 columns represent gene expression measurements, 
+#   and column 4773 contains the "Class" variable (values: 1 or 2).
+
+# Check the distribution of the "Class" variable
+table(InitialData[, 'Class'])
+# Example Output:
+# Class
+#   1   2 
+#  34  44 
+
+
+
+# --- Randomization Setup ---
+
+# The script assigns a subset of variables to each registration number.
+# In the file 'subsets.csv', each registration number is associated with 10 columns (variables).
+
+# Load the file 'subsets.csv', which contains the registration numbers and their associated variable subsets.
+subsets <- read.csv("C:/AS/subsets.csv")
+
+# Specify your registration number to identify your subset of variables.
+# Replace 2401468 with your personal registration number.
+my_registration_number <- 2401089
+
+# Find the index of the row corresponding to your registration number.
+idx <- which(subsets$RegId == my_registration_number)
+print(idx) # Print the index to confirm that the registration number was found.
+# For example, [1] 1 indicates that the corresponding row is the first row in the dataset.
+
+# Extract the subset of variables (excluding the first column "RegId") for your registration number.
+# The result is a vector of 10 variables associated with your registration number.
+my_subset <- unlist(c(subsets[idx, -1]))
+print(my_subset) # Print your subset of variables.
+
+# Example output:
+# Var1  Var2  Var3  Var4  Var5  Var6  Var7  Var8  Var9 Var10
+# 417   3124  2492  4590  107   1557  4554  3610  4657 2428
+
+
+# Assume that InitialData is a preloaded dataset containing the original variables.
+Class <- InitialData$Class # Extract the "Class" column, which represents the labels or targets.
+
+# Select only the columns (variables) specified in the subset (my_subset).
+X <- InitialData[, my_subset]
+
+# Combine the "Class" column with the selected variables to create the final dataset.
+My_DataSet <- cbind(Class, X)
+
+# The dataset 'My_DataSet' contains:
+# - The "Class" column as the first column.
+# - The 10 variables associated with your registration number.
+print(My_DataSet)
+
+
+```
+
+# Task 1: Compute the variance, co-variance and correlation matrix of your individual subset of 10 genes.
+
+```{r, eval=TRUE}
+variance<-var(My_DataSet )
+print(variance)
+
+covariance<-cov(My_DataSet )
+print(covariance)
+
+correlation<-cor(My_DataSet )
+print(correlation)
+```
+
+Analysis of Covariance Matrix :
+
+The covariance matrix presents absolute measures about changes in the expression of one gene corresponding to the variation in another. The higher the value, the stronger the correlation. A negative value indicates an inverse relationship. "The Class" represents the row/ column and its relationship to the type of cancer in regard to gene expression. Some of these genes, such as NM_002775 and NM_006942 are positively covariance with "Class," which may suggest that high expression may be associated with a particular type of cancer. Others, such as NM_002106 and Contig36879_RC have negative covariance and hence may indicate low expression of these genes with a particular type of cancer.
+
+Analysis of Correlation Matrix :
+
+The correlation matrix normalizes the covariance values so that better comparisons can be drawn from strengths of associations. The values range from -1 to 1, whereby: 1 = perfect positive correlation; -1 = perfect negative correlation; 0 = no correlation. Key Observations: Class correlation: For example, genes like NM_002775 with 0.168 and NM_006942 with 0.189 show a moderate positive correlation with "Class," hence can be considered biomarkers for classification. Strong positive correlation: NM_002775 and U16752: 0.362 - These genes tend to express together. Contig36879_RC and NM_002106: 0.547 - This involves a strong co-expression pattern. Strong negative correlations: NM_002106 and NM_002775: -0.384 - Indicates opposite tendencies in expression NM_002106 and Class (-0.338) – Here, high expressions of NM_002106 show relation to one class probably the noninvasive class.
+
+
+
+# Task 2 : Using R to calculate the distance matrix of your individual subset of 10 genes.
+
+```{r, eval=TRUE}
+# Compute the Euclidean distance matrix for the selected genes
+distance_matrix <- dist(My_DataSet[, -1], method = "euclidean")
+
+# Print the distance matrix
+print("Distance Matrix:")
+print(as.matrix(distance_matrix))
+
+```
+
+A distance matrix is a representation of a measure of pairwise distances across your data. Some ways in which you can analyze it include:
+
+1.  **Diagonal Elements**: These are all zero, as expected, since the distance between a sample and itself is zero.
+
+2.  **Distance Patterns**: The more similar the samples are, the lower the value - Larger values imply greater differences across samples.
+
+3.  **Clustering Potential**: You can try some clustering - specifically, hierarchical clustering - to find out clusters of similar samples. Clusters may visually be brought out in a heat map of this matrix
+
+4.  **Reduced Dimensionality**: If this matrix has been derived from a PCA you could check if first two principal components capture sample differences well Visualization of Samples: PCA, MDS
+
+5.  **Comparison Across Groups:** If your samples are labeled as invasive vs. noninvasive cancer you may want to check whether distances within groups are smaller than distances between groups.
+
+
+
+# Task 3 : Using R to calculate univariate Q-Q-plots and a Q-Q-plot based on the generalised distance for the observations of your individual subset of 10 genes.
+
+```{r, eval=TRUE}
+# Generate Q-Q plots for each gene in the subset
+par(mfrow = c(2, 5))  # Arrange plots in a 2x5 grid
+
+for (gene in colnames(My_DataSet[, -1])) {
+  qqnorm(My_DataSet[, gene], main = paste("Q-Q Plot:", gene))
+  qqline(My_DataSet[, gene], col = "red")  # Add reference line
+}
+par(mfrow = c(1, 1))  # Reset plot layout
+
+
+# Compute the Mahalanobis distance
+center <- colMeans(My_DataSet[, -1])  # Mean of each gene
+cov_matrix <- cov(My_DataSet[, -1])  # Covariance matrix
+mahal_dist <- mahalanobis(My_DataSet[, -1], center, cov_matrix)
+
+# Generate Q-Q plot for Mahalanobis distances
+qqplot(qchisq(ppoints(nrow(My_DataSet)), df = 10), mahal_dist, 
+       main = "Q-Q Plot of Mahalanobis Distance", 
+       xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
+abline(a = 0, b = 1, col = "red")  # Reference line
+
+```
+
+First Plot Q-Q Plot of Mahalanobis Distance
+
+Purpose:
+
+This Q-Q plot compares sample quantiles of Mahalanobis distances of the observations against theoretical quantiles of a chi-square distribution. Mahalanobis distance will be used in order to consider multivariate outliers and evaluate how strongly data conformed to multivariate normal distribution. Interpretation:
+
+Ideal Case:
+
+If the points lie close to the red diagonal line, then the Mahalanobis distances are approximately chi-square distributed, which means the data is multivariate normally distributed.
+
+Current Observation:
+
+The left part of the plot-that is, the lower quantiles-fits well with the red line, meaning a good fit for most observations.However, at the right side-the higher quantiles-the points go upwards, indicating that there are outliers with considerably large Mahalanobis distances.The most extreme upper-right point is an outlier, and this may indicate that some data points are not normally multivariate distributed.
+
+Second Figure (Several Q-Q Plots for Individual Genes) Purpose:
+
+These individual Q-Q plots assess the normality of expression values for particular genes.Sample quantiles are plotted against theoretical quantiles of a normal distribution.
+
+Interpretation:
+
+Ideal Case: If the data is normally distributed, the points should lie along the red diagonal line.
+
+Current Observation:
+
+Most plots follow the red line closely, indicating that these gene expression values may be close to a normal distribution.Some plots show a little tail deviation, with either slight indications of skewness or simply heavier tails than are shown by a normal distribution.At most, one or two plots showed systematic curvature and therefore could have suggested mild non-normality such as right-skewed or left-skewed.
+
+# Task 4 : Use R for a principal component analysis of your individual subset of 10 genes.
+
+```{r, eval=TRUE}
+
+# Perform PCA on the subset of 10 genes (excluding the Class column)
+pca_result <- prcomp(My_DataSet[, -1], center = TRUE, scale. = TRUE)
+
+# Print PCA summary (variance explained by each component)
+summary(pca_result)
+
+# Scree plot to visualize the variance explained by each principal component
+screeplot(pca_result, type = "lines", main = "Scree Plot")
+
+
+# Biplot showing how genes and samples contribute to the first two principal components
+biplot(pca_result, main = "PCA Biplot", cex = 0.7)
+
+# Extract eigenvalues (variance explained by each PC)
+eigenvalues <- pca_result$sdev^2
+print("Eigenvalues (Variance Explained by Each PC):")
+print(eigenvalues)
+
+# Extract loadings (contributions of genes to each principal component)
+loadings <- pca_result$rotation
+print("PCA Loadings (Gene Contributions to PCs):")
+print(loadings)
+
+# Optional: Format tables for report presentation
+library(knitr)
+
+
+
+
+
+```
+
+1. Variance Explained by Principal Components
+
+The first four components, PC1-PC4, explain a significant amount of the total variance, which is approximately 6.66 units combined out of 10Among these, PC1 captures the highest amount of variance at 2.59 units, followed by PC2 at 1.76, PC3 at 1.39, and PC4 at 0.91.
+Beyond PC4, the explained variance falls off steeply, suggesting further PCs beyond this point will add very little new information.
+
+Observation:
+But maybe it captures the spirit of the structure in the data with just 3 or 4 principal components rather than all 10 dimensions.
+
+2. Scree Plot
+
+There is a clear elbow point on the scree plot around PC4.That would imply at 4 principal components, more components provide little value in explaining the variance.
+
+Observation :
+Most of the information of the dataset is probably retained with a dimensionality reduction to top 4 PCs.
+
+3. PCA Loadings
+
+Whereas some of the PCs contain high representations from genes like NM_002106, Z34893, and Contig36879_RC, others-for example, Contig27055_RC and NM_006942-operate on single components.Those genes that strongly load onto several PCs are key genetic drivers underlying the variation, while genes specific to single PCs play niche roles.
+
+4. PCA Biplot
+
+This is the biplot showing the observations-no doubt the samples-scattered in the space of PC1-PC2; arrows point out the genes and their contribution.Genes with longer arrows, such as NM_002106, AL079276, and Contig64775_RC, contribute more toward sample distribution.Scattered points around the middle indicate that the samples share a commonality with outliers
+
+Observation:
+Clustering probably highlights an underlying separation of samples. This might well be because of conditions, treatment, or similarity in genetics.
+
+5. Gene Relationships
+
+Directions of arrows in this biplot can suggest correlations between genes.For example, Z34893 and AL079276 point in roughly the same direction-so these genes might be positively correlated in the data set.Thus correlations between genes given by PCA loadings and directionalities can give groups of coregulated genes.
+
+
+
+# Task 5 : Fit a	multivariate analysis	of variance	model	(MANOVA) to	your individual	subset of	10 genes.Investigate if	there	is a difference	between	invasive(label 1) and	noninvasive(label	2) cancer.	
+
+```{r, eval=TRUE}
+
+# Remove any rows with NA values
+dim_before <- dim(My_DataSet)
+My_DataSet <- na.omit(My_DataSet)
+dim_after <- dim(My_DataSet)
+cat("Rows removed due to NAs:", dim_before[1] - dim_after[1], "\n")
+
+# Ensure only numeric columns are used for calculations
+numeric_columns <- sapply(My_DataSet, is.numeric)
+My_DataSet_numeric <- My_DataSet[, numeric_columns]
+
+
+# --- Euclidean Distance ---
+distance_matrix <- dist(My_DataSet_numeric[, -1], method = "euclidean")
+print(as.matrix(distance_matrix))
+
+
+# --- MANOVA Analysis ---
+# Identify the correct column for cancer type
+cancer_column_name <- tail(colnames(InitialData), 1)  # Get the last column name
+My_DataSet$CancerType <- as.factor(InitialData[[cancer_column_name]])  # Assign dynamically
+
+# Check if CancerType has valid values
+if (length(unique(My_DataSet$CancerType)) < 2) {
+  stop("CancerType column has fewer than 2 unique values. MANOVA cannot be performed.")
+}
+
+manova_model <- manova(as.matrix(My_DataSet_numeric[, -1]) ~ My_DataSet$CancerType)
+summary(manova_model, test = "Pillai")
+summary.aov(manova_model)
+
+# --- Boxplots for Gene Expression Differences ---
+library(ggplot2)
+library(reshape2)
+My_DataSet_long <- melt(My_DataSet, id.vars = "CancerType")
+ggplot(My_DataSet_long, aes(x = CancerType, y = value, fill = CancerType)) +
+  geom_boxplot() +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal() +
+  ggtitle("Gene Expression Differences Between Cancer Types")
+
+```
+
+This plot shows, for many genes, the differential gene expression of two cancer types represented in red (Cancer Type 1) and teal (Cancer Type 2). The box plots depict the distribution and central tendency of gene expression values to bring into light variability and potential outliers. The understanding of how these genes behave across cancer types can help explain disease mechanisms and potential biomarkers.
+
+Observations :
+
+1. NM_006942:
+The expression values for Cancer Type 2 are more spread out with a higher median compared to Cancer Type 1.This supports the case for this gene's active expression in Cancer Type 2, suggesting its role perhaps as a potential biomarker in distinguishing between these two types. 
+
+2. NM_002775:
+The expression in Cancer Type 2 is always higher at the median than in Cancer Type 1. Whiskers and box sizes are narrower, showing less variability.The consistent difference in expression could indicate a stable pattern of expression and thus could be useful in diagnostics.
+
+3. U16752:
+Expression distributions between the cancer types are highly overlapped, with no clear distinction.This gene might not be differentially expressed between the two types and thus would bear little diagnostic relevance.
+
+4. Contig27055_RC:
+Medians for both cancer types are about the same, narrow whiskers, and no variability.
+This is because of the similar expression pattern of a gene that lacks discriminatory power to enable it to separate cancer types.
+
+5. NM_002106:
+The same expression in Cancer Type 2 is visibly outnumbered by outliers,
+From this pattern, the expression is overexpression in Cancer Type 2 with larger variability and will be required to have further investigation.
+
+6. NM_002197:
+The overall pattern of distribution is similar, but there are a few outliers that appear much higher for the second cancer type. A few higher expression levels might indicate occasional gene activity differences but are not strongly differentiating. 
+
+7. Z34893:
+Similar medians and interquartile ranges between the two cancer types; outliers in Cancer Type 2 and Expression changes are relatively small, and so this gene has less relevance for diagnostic use. 
+
+8. Contig64775_RC:
+The median expression is higher for Cancer Type 2 but still overlaps with Cancer Type 1.
+The low variation in expression between the two cancer types limits the utility of this gene as a biomarker. 
+
+9. Contig36879_RC:
+Cancer Type 2 has a larger range than Cancer Type 1 and has more extremes.
+The greater the variability, the more it is indicative that this gene's behavior might be influenced by cancer-specific factors.
+
+10. AL079276:
+Cancer Type 2 has higher expression with wider dispersion and some outliers.
+This implies that this gene is upregulated in Cancer Type 2 and hence may be relevant in the disease context.
+
+Overall observations:
+
+Differential Expression: 
+Many genes like NM_006942, NM_002775, and AL079276 are found to be quite differently expressed in Cancer Types 1 and 2 and hence could serve as biomarkers.Such genes with the least expression overlap include NM_002775 and NM_006942, which can be used as potential candidates to differentiate between cancer types.
+
+Variability: 
+The variability in the gene expression of Cancer Type 2 is much more, which may imply the heterogeneity itself in the molecular profile. Outliers: Various genes showed outliers, especially for Cancer Type 2, that may be indicative of subtypes or a variation in cancer behavior.
+
+
+
+# Task 6 : Use the first and second	principal	component	to illustrate, if	there	is a	difference	between	invasive and noninvasive	cancer.	
+
+```{r, eval=TRUE}
+# Load necessary libraries
+library(ggplot2)
+
+# --- Prepare Data ---
+# Select the gene expression data (assuming `my_subset` holds the gene expression columns)
+gene_expression_data <- InitialData[, my_subset]
+
+# Standardize the data (mean centering and scaling)
+scaled_data <- scale(gene_expression_data)
+
+# --- Perform PCA ---
+pca_result <- prcomp(scaled_data, center = TRUE, scale. = TRUE)
+
+# --- Visualize the PCA Results ---
+# Create a data frame for visualization, including first two principal components and Class labels
+pca_data <- data.frame(PC1 = pca_result$x[, 1], 
+                       PC2 = pca_result$x[, 2], 
+                       Class = factor(InitialData$Class))
+
+# Plot the PCA with the first and second principal components, colored by Class
+ggplot(pca_data, aes(x = PC1, y = PC2, color = Class)) +
+  geom_point(size = 3, alpha = 0.6) +  # Slightly smaller and more transparent points
+  labs(title = "PCA: Gene Expression - Invasive vs Noninvasive Cancer", 
+       x = "Principal Component 1", 
+       y = "Principal Component 2") +
+  theme_light() +  # Changed theme to light
+  scale_color_manual(values = c("darkred", "darkblue")) +  # Darker colors for Class
+  theme(legend.title = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 14, face = "bold"))  # Adjust title size and style
+
+# --- Table of Variance Explained by Each Principal Component ---
+summary(pca_result)
+
+# --- Additional Details: Eigenvalues (Variance explained by each Principal Component) ---
+eigenvalues <- summary(pca_result)$importance[2, ]  # Proportion of Variance Explained
+eigenvalues_table <- data.frame(Principal_Component = 1:length(eigenvalues), 
+                                Variance_Explained = eigenvalues)
+
+# Print the table of eigenvalues
+print(eigenvalues_table)
+
+```
+
+PCA Loadings (Gene Contributions to Principal Components) :
+
+The following table presents the contributions of various genes in the first two principal components, PC1 and PC2.
+
+PC1: The first principal component is dominated by genes NM_002106 with 0.483, Contig36879_RC with 0.403, and Contig64775_RC with 0.173.
+
+PC2: The second principal component is significantly affected by Contig27055_RC with -0.657, Z34893 with 0.365, and AL079276 with 0.369.
+
+Positive and negative loadings are showing the direction of influence that each gene has to the components. 
+
+Variance Explained by Principal Components :
+
+PC1 accounts for 25.926% of the variation, while PC2 accounts for 17.662%. Overall, they describe approximately 43.59% of the variance within the dataset. That means these two components are useful in a view to see much of the variation in gene expression between the cancer types. 
+
+PCA Scatter Plot (Invasive vs. Non-invasive Cancer) :
+
+The plot depicts a separation between the two types of cancers through principal components PC1 and PC2.Red points denote type 1 cancer, while blue points denote type 2 cancer.There is some degree of overlap; however, two distinct clusters are seen showing the differential gene expression in both the groups.This plot reflects outliers at its left bottom and at the right bottom section of the graph.
+
+Observations :
+
+Cancers Type Separation:
+Type 1 and Type 2 cancers can be partially distinguished based on the PC1 against PC2 because of proper differences in gene expressions between two classes.
+
+Principal Components Contribution:
+First principal component represents higher percentage of variance, which for the most part shows horizontal variation of this scatter plot of dataset.PC2 further adds
+orthogonal variation that helps clarify clustering.
+
+Gene Contribution:
+NM_002106, Contig36879_RC, and Contig64775_RC are strongly influencing PC1 and hence could be very influential in distinguishing the cancer types. Contig27055_RC and AL079276 are highly influential on PC2. 
+
+Variance Explained:
+43.59% of variance explained by PC1 and PC2; this means the dimensionality reduction is moderate.May need additional components to fully separate cancer types. 
+
+Outliers:
+The outliers in the extreme positions of the scatter could indicate some abnormal gene expression or errors in data collection. 
+
+Biological Interpretation:
+High positive or negative contributions to PCs from genes can be used as important markers that distinguish invasive from non-invasive cancers. Further investigation into these genes might reveal their role in cancer progression. 
+
+Application of PCA:
+PCA effectively reduces dimensionality, and the analysis and visualization of such complex gene expression data get much easier. This approach might highlight patterns that could inform diagnostic or treatment decisions.
+
+
+
+# Task 7 : 	Apply	LDA	to your individual subset of 10	genes	and	the	class	variable	  (invasive (label	1) and noninvasive (label	2)cancer). Calculate	a	confusion	matrix,	sensitivity,	specificity	and	
+	
+```{r, eval=TRUE}
+# Install necessary packages if not already installed
+required_packages <- c("pROC", "GGally", "MASS", "ggplot2", "knitr")
+new_packages <- required_packages[!(required_packages %in% installed.packages()[,"Package"])]
+if(length(new_packages)) install.packages(new_packages)
+
+# Load necessary libraries
+library(MASS)
+library(pROC)
+library(GGally)
+library(ggplot2)
+library(knitr)
+
+# Assuming the dataset is 'InitialData', with the target variable being 'Class'
+# Remove constant variables within groups
+filtered_data <- InitialData[, apply(InitialData, 2, function(x) length(unique(x)) > 1)]
+
+# Clean data: Remove NA values and ensure 'Class' is a factor
+filtered_data <- na.omit(filtered_data)
+filtered_data$Class <- factor(filtered_data$Class)
+
+# Fit the LDA model
+lda_model <- lda(Class ~ ., data = filtered_data)
+
+# Predict using the fitted LDA model
+lda_predictions <- predict(lda_model, filtered_data)
+
+# Get predicted class labels
+predicted_classes <- lda_predictions$class
+
+# Generate confusion matrix
+conf_matrix <- table(Predicted = predicted_classes, Actual = filtered_data$Class)
+print("Confusion Matrix:")
+print(conf_matrix)
+
+# Compute performance metrics
+TP <- conf_matrix[2, 2]  # True Positive
+TN <- conf_matrix[1, 1]  # True Negative
+FP <- conf_matrix[1, 2]  # False Positive
+FN <- conf_matrix[2, 1]  # False Negative
+
+# Sensitivity (True Positive Rate)
+sensitivity <- TP / (TP + FN)
+# Specificity (True Negative Rate)
+specificity <- TN / (TN + FP)
+# Misclassification Error
+misclassification_error <- 1 - sum(diag(conf_matrix)) / sum(conf_matrix)
+
+# Print metrics
+cat("Sensitivity:", round(sensitivity, 3), "\n")
+cat("Specificity:", round(specificity, 3), "\n")
+cat("Misclassification Error:", round(misclassification_error, 3), "\n")
+
+# Visualize the LDA results with a histogram of the first linear discriminant (LD1)
+lda_scores <- as.data.frame(lda_predictions$x)
+lda_scores$Class <- filtered_data$Class
+
+ggplot(lda_scores, aes(x = LD1, fill = Class)) +
+  geom_histogram(binwidth = 0.1, alpha = 0.6, position = "identity") +
+  theme_minimal() +
+  labs(title = "LDA: Distribution of LD1 Scores by Class", x = "LD1", y = "Frequency") +
+  theme(legend.title = element_blank())
+
+# Plot the ROC Curve
+roc_curve <- roc(filtered_data$Class, lda_predictions$posterior[, 2])  # Class 2 is the positive class
+plot(roc_curve, main = "ROC Curve for LDA", col = "blue", lwd = 2)
+
+# Visualize the heatmap of LDA coefficients for genes
+lda_coeffs <- lda_model$scaling
+lda_coeffs_df <- as.data.frame(lda_coeffs)
+lda_coeffs_df$Gene <- rownames(lda_coeffs_df)
+# Visualize the heatmap of LDA coefficients for genes
+lda_coeffs <- lda_model$scaling
+lda_coeffs_df <- as.data.frame(lda_coeffs)
+lda_coeffs_df$Gene <- rownames(lda_coeffs_df)
+
+# Update to ensure the correct column is used
+ggplot(lda_coeffs_df, aes(x = Gene, y = 1, fill = lda_coeffs_df[, 1])) +  # Corrected the reference to the first column
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  theme_minimal() +
+  labs(title = "Heatmap of LDA Coefficients", x = "Gene", y = "") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+
+
+
+
+```
+1.  Confusion Matrix :
+
+TP: 26 (Correctly predicted class 2)
+TN: 38 (Correctly predicted class 1)
+FP: 8 (Wrongly predicted class 2 as class 1)
+FN: 6 (Wrongly predicted class 1 as class 2)
+
+2. Performance Metrics :
+
+Sensitivity (Recall): 0.826
+This metric gives a view on the model correctly identifying 82.60% of the positive cases, which is class 2.
+
+Specificity: 0.812
+Specificity tells us the negative cases correctly predicted are 81.20%.
+
+Misclassification Error: 0.1790
+That means 17.9% of the predictions were wrong.
+
+3. LDA Coefficient Heatmap :
+
+The heatmap describes the contribution of different genes towards the LDA model.
+In the heat map, the positive coefficients are orange to red, representing that the respective genes enhance the class separability, while a negative coefficient is in blue and does the opposite.AL079276 and NM_002016 appear to be the most important genes given their positions are at the very extreme values on the color palette.
+
+4. LD1 Score Distribution by Class :
+
+This distribution plot shows the samples from two classes separated based on the linear discriminant function. There is an appropriate amount of overlap between the class distributions to indicate partial difficulties in having clear-cut separation using only one LD1 component to distinguish classes. The more separation between the two classes would therefore mean that for effective linear separability, 
+
+5. ROC Curve for LDA :
+The graph depicts the relationship between sensitivity versus specificity.
+The blue curve lies reasonably above the diagonal, depicting quite good predictive ability. An ideal AUC stands close to 1, which is interpreted as an excellent model performance. Simultaneously, the moderate slope of this curve suggests that the classification power is rather fair. 
+
+Observations: 
+
+The sensitivity is rather high, close to 80%, so the model is good at picking up the positive cases. However, it is much lower in terms of specificity, which means this model poorly tells on negative cases.
+
+This error rate of 17.9% for misclassification is, therefore, moderate and leaves some room for further improvement of the model.
+
+From the heat map, it can be deduced that a number of genes are more important in distinguishing classes and may hence form potential key markers for analysis.
+
+The distribution plot indicates partial class separation and thus suggests the possibility of improving class distinguishability with the inclusion of more features or by more efficient methods of reducing the dimensions.
+
+The ROC graph is showing reasonable performance, which can be much better with parameter tuning or employing ensemble techniques.
